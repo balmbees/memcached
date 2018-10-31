@@ -1,6 +1,6 @@
 {
   "name": "@vingle/memcached",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "author": "Arnout Kazemier",
   "description": "A fully featured Memcached API client, supporting both single and clustered Memcached servers through consistent hashing and failover/failure. Memcached is rewrite of nMemcached, which will be deprecated in the near future.",
   "main": "lib/index.js",
@@ -56,12 +56,10 @@
     "@types/node": "^10.10.2",
     "chai": "^4.1.2",
     "coveralls": "^3.0.2",
-    "memcache-plus": "^0.2.19",
     "mocha": "^5.2.0",
     "nyc": "^13.0.1",
-    "pre-commit": "^1.2.2",
     "rimraf": "^2.6.2",
     "tslint": "^5.11.0",
-    "typescript": "3.0.x"
+    "typescript": "^3.0.1"
   }
 }
