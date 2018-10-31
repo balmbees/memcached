@@ -1,6 +1,9 @@
+import * as debug from 'debug'
 import { EventEmitter } from 'events'
 import HashRing = require('hashring')
 import Jackpot = require('jackpot')
+
+const logger = debug('memcached:Memcached')
 
 import {
     CommandCompiler,
@@ -65,6 +68,15 @@ export class Memcached extends EventEmitter {
     private _servers: Array<string>
     private _issues: IIssueMap
     private _connections: IConnectionMap
+
+    // tslint:disable
+    public static async createForElasticache(url: string) {
+        const config = new this(url);
+        const nodes = await config.configGetCluster();
+        logger("createForElasticache %o", nodes);
+
+        return new this(nodes.map(c => [c.hostname, c.port].join(":")))
+    }
 
     constructor(servers: Servers, options: Partial<IMemcachedConfig> = {}) {
         super()
@@ -197,6 +209,22 @@ export class Memcached extends EventEmitter {
 
     public decrement(key: string, value: number): Promise<number|boolean> {
         return this.decr(key, value)
+    }
+
+    public async configGetCluster() {
+        const res = await (this._executeCommand(() => ({
+            command: 'config get cluster',
+        })) as Promise<string>)
+
+        // TODO handle exception
+        return res.split('\n')[1].split(' ').map((line) => {
+            const [hostname, ip, port] = line.split('|')
+            return {
+                hostname,
+                ip,
+                port: Number(port),
+            }
+        })
     }
 
     // You need to use the items dump to get the correct server and slab settings
@@ -451,7 +479,7 @@ export class Memcached extends EventEmitter {
                 return this._throwError(new Error(argsError))
 
             } else {
-                 // generate a regular query,
+                // generate a regular query,
                 const redundancy = this._config.redundancy < this._servers.length
                 const queryRedundancy = command.redundancyEnabled
                 let redundants: Array<string> = []
@@ -675,7 +703,7 @@ export class Memcached extends EventEmitter {
                         })
 
                         // connect the net.Socket [port, hostname]
-                        socket.connect(socket.hosts[0])
+                        socket.connect(socket.hosts[0], socket.hosts[1])
                         return socket
                     })
 
@@ -739,18 +767,7 @@ export class Memcached extends EventEmitter {
             let dataSet: string | undefined = ''
 
             if (/^\d+$/.test(tokenSet[0])) {
-                // special case for "config get cluster"
-                // Amazon-specific memcached configuration information, see aws
-                // documentation regarding adding auto-discovery to your client library.
-                // Example response of a cache cluster containing three nodes:
-                //   configversion\n
-                //   hostname|ip-address|port hostname|ip-address|port hostname|ip-address|port\n\r\n
-                if (/(([-.a-zA-Z0-9]+)\|(\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b)\|(\d+))/.test(socket.bufferArray[0])) {
-                    tokenSet.unshift('CONFIG')
-
-                } else {
-                    tokenSet.unshift('INCRDECR')
-                }
+                tokenSet.unshift('INCRDECR')
             }
 
             const tokenType: string = tokenSet[0]
