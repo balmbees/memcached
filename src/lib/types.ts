@@ -61,6 +61,7 @@ export interface IMemcachedConfig {
     encoding: string
     defaultTTL: number
     failOverServers: Array<string>
+    elasticacheAutoDiscovery: boolean
 }
 
 export type MemcachedOptions =

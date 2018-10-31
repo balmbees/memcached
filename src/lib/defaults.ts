@@ -31,4 +31,5 @@ export const DEFAULT_CONFIG: IMemcachedConfig = {
 
     defaultTTL: 600,
     failOverServers: [],
+    elasticacheAutoDiscovery: false,
 }
